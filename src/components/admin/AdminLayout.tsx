@@ -1,11 +1,9 @@
 import { ReactNode } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { useAdmin } from '@/hooks/use-admin-hook';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2 } from 'lucide-react';
 import {
   LayoutDashboard,
   Store,
@@ -48,24 +46,17 @@ interface AdminLayoutProps {
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
-  const { loading, error } = useAdmin();
   const { userRole } = useAuth();
   const location = useLocation();
 
-  if (loading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error || !userRole || (userRole !== 'admin' && userRole !== 'superadmin')) {
+  // The ProtectedRoute component will handle loading and access denial.
+  // We can add a fallback here for extra safety, but the primary check is done by the router.
+  if (!userRole || (userRole !== 'admin' && userRole !== 'superadmin')) {
     return (
       <div className="flex h-screen w-full flex-col items-center justify-center gap-4">
         <h1 className="text-2xl font-semibold text-destructive">Access Denied</h1>
         <p className="text-muted-foreground">
-          You do not have permission to access this area.
+          You do not have permission to access this area. Please contact an administrator.
         </p>
       </div>
     );
@@ -100,18 +91,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           {children}
         </div>
       </main>
-    </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="flex">
-        <AdminSidebar />
-        <main className="flex-1 p-6">
-          {children}
-        </main>
-      </div>
     </div>
   );
 }

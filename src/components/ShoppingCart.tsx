@@ -218,7 +218,7 @@ export const useShoppingCart = () => {
 };
 
 export const ShoppingCart = () => {
-  const { cartItems, removeFromCart, updateQuantity, getTotalItems, getTotalPrice, isOpen, setIsOpen } = useShoppingCart();
+  const { cartItems, removeFromCart, updateQuantity, getTotalItems, getTotalPrice, isOpen, setIsOpen, clearCart } = useShoppingCart();
 
   if (cartItems.length === 0) {
     return (
@@ -329,10 +329,7 @@ export const ShoppingCart = () => {
             <Button 
               variant="outline" 
               className="w-full" 
-              onClick={() => {
-                const { clearCart } = useShoppingCart();
-                clearCart();
-              }}
+              onClick={clearCart}
             >
               Clear Cart
             </Button>

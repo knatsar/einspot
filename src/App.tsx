@@ -35,53 +35,55 @@ const queryClient = new QueryClient({
   },
 });
 
+const AppRoutes = () => (
+  <Routes>
+    <Route path="/" element={<Index />} />
+    <Route path="/auth-debug" element={<AuthDebug />} />
+    <Route path="/auth" element={<Auth />} />
+    <Route path="/dashboard" element={
+      <ProtectedRoute>
+        <CustomerDashboard />
+      </ProtectedRoute>
+    } />
+    <Route path="/admin/*" element={
+      <ProtectedRoute>
+        <AdminErrorBoundary>
+          <AdminDashboard />
+        </AdminErrorBoundary>
+      </ProtectedRoute>
+    } />
+    <Route path="/products" element={<Products />} />
+    <Route path="/products/:id" element={<ProductDetail />} />
+    <Route path="/projects" element={<Projects />} />
+    <Route path="/projects/:id" element={<ProjectDetail />} />
+    <Route path="/about" element={<About />} />
+    <Route path="/services" element={<Services />} />
+    <Route path="/contact" element={<Contact />} />
+    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+    <Route path="/terms-of-service" element={<TermsOfService />} />
+    <Route path="/cookie-policy" element={<CookiePolicy />} />
+    <Route path="/warranty" element={<Warranty />} />
+    <Route path="*" element={<NotFound />} />
+  </Routes>
+);
+
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <ShoppingCartProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth-debug" element={<AuthDebug />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <CustomerDashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/*" element={
-                  <ProtectedRoute>
-                    <AdminErrorBoundary>
-                      <AdminDashboard />
-                    </AdminErrorBoundary>
-                  </ProtectedRoute>
-                } />
-                <Route path="/products" element={<Products />} />
-                <Route path="/products/:id" element={<ProductDetail />} />
-                <Route path="/product/:id" element={<ProductDetail />} />
-                <Route path="/projects" element={<Projects />} />
-                <Route path="/project/:id" element={<ProjectDetail />} />
-                <Route path="/projects/:id" element={<ProjectDetail />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/services" element={<Services />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                <Route path="/terms-of-service" element={<TermsOfService />} />
-                <Route path="/cookie-policy" element={<CookiePolicy />} />
-                <Route path="/warranty" element={<Warranty />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-          </ShoppingCartProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <ShoppingCartProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <AppRoutes />
+              </TooltipProvider>
+            </ShoppingCartProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
   );
 }
 
