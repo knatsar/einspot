@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Send } from 'lucide-react';
+import { sanitizeInput } from '@/utils/inputValidation';
 
 interface NewsletterSubscriptionProps {
   className?: string;
@@ -18,7 +19,11 @@ const NewsletterSubscription = ({ className = "" }: NewsletterSubscriptionProps)
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !email.includes('@')) {
+    const sanitizedEmail = sanitizeInput(email.trim().toLowerCase());
+    
+    // Enhanced email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!sanitizedEmail || !emailRegex.test(sanitizedEmail)) {
       toast({
         title: "Invalid Email",
         description: "Please enter a valid email address.",
@@ -34,7 +39,7 @@ const NewsletterSubscription = ({ className = "" }: NewsletterSubscriptionProps)
       const { data: existingSubscriber } = await supabase
         .from('newsletter_subscribers')
         .select('id, status')
-        .eq('email', email)
+        .eq('email', sanitizedEmail)
         .single();
 
       if (existingSubscriber) {
@@ -43,9 +48,12 @@ const NewsletterSubscription = ({ className = "" }: NewsletterSubscriptionProps)
             title: "Already Subscribed",
             description: "You're already subscribed to our newsletter!",
           });
+          setEmail('');
+          setLoading(false);
+          return;
         } else {
           // Reactivate subscription
-          await supabase
+          const { error: reactivateError } = await supabase
             .from('newsletter_subscribers')
             .update({ 
               status: 'active', 
@@ -53,6 +61,8 @@ const NewsletterSubscription = ({ className = "" }: NewsletterSubscriptionProps)
               unsubscribed_at: null 
             })
             .eq('id', existingSubscriber.id);
+          
+          if (reactivateError) throw reactivateError;
           
           setSubscribed(true);
           toast({
@@ -64,7 +74,12 @@ const NewsletterSubscription = ({ className = "" }: NewsletterSubscriptionProps)
         // New subscription
         const { error } = await supabase
           .from('newsletter_subscribers')
-          .insert([{ email, source: 'website' }]);
+          .insert([{ 
+            email: sanitizedEmail, 
+            source: 'website',
+            status: 'active',
+            subscribed_at: new Date().toISOString()
+          }]);
 
         if (error) {
           throw error;
@@ -82,7 +97,7 @@ const NewsletterSubscription = ({ className = "" }: NewsletterSubscriptionProps)
       console.error('Subscription error:', error);
       toast({
         title: "Subscription Failed",
-        description: "There was an error subscribing to the newsletter. Please try again.",
+        description: error.message || "There was an error subscribing to the newsletter. Please try again.",
         variant: "destructive",
       });
     } finally {

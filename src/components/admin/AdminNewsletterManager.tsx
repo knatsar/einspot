@@ -214,28 +214,54 @@ const AdminNewsletterManager = () => {
           description: "No active subscribers found to send emails to",
           variant: "destructive",
         });
+        setSending(false);
         return;
       }
 
-      // Call the send-emails edge function for bulk sending
-      const { data, error } = await supabase.functions.invoke('send-emails', {
-        body: {
-          recipients: targetEmails,
-          subject: emailSubject,
-          html: emailContent.replace(/\n/g, '<br>'),
-          template: 'custom',
-          data: {
-            subject: emailSubject,
-            content: emailContent.replace(/\n/g, '<br>')
-          }
-        }
-      });
+      // Send emails in batches to avoid rate limiting
+      const batchSize = 10;
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (let i = 0; i < targetEmails.length; i += batchSize) {
+        const batch = targetEmails.slice(i, i + batchSize);
+        
+        try {
+          const { data, error } = await supabase.functions.invoke('send-emails', {
+            body: {
+              recipients: batch,
+              subject: emailSubject,
+              html: emailContent.replace(/\n/g, '<br>'),
+              template: 'newsletter',
+              data: {
+                subject: emailSubject,
+                content: emailContent.replace(/\n/g, '<br>'),
+                company_name: 'EINSPOT Engineering'
+              }
+            }
+          });
 
-      if (error) throw error;
+          if (error) {
+            console.error(`Batch ${i / batchSize + 1} failed:`, error);
+            errorCount += batch.length;
+          } else {
+            successCount += batch.length;
+          }
+        } catch (batchError) {
+          console.error(`Batch ${i / batchSize + 1} error:`, batchError);
+          errorCount += batch.length;
+        }
+        
+        // Small delay between batches
+        if (i + batchSize < targetEmails.length) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
 
       toast({
         title: "Success",
-        description: `Newsletter sent to ${targetEmails.length} subscribers!`,
+        description: `Newsletter sent to ${successCount} subscribers${errorCount > 0 ? `, ${errorCount} failed` : ''}!`,
+        variant: errorCount > 0 ? "destructive" : "default"
       });
 
       setBulkEmailDialog(false);
@@ -246,7 +272,7 @@ const AdminNewsletterManager = () => {
       console.error('Error sending bulk email:', error);
       toast({
         title: "Error",
-        description: "Failed to send newsletter. Please check your email configuration.",
+        description: error.message || "Failed to send newsletter. Please check your email configuration.",
         variant: "destructive",
       });
     } finally {
