@@ -53,7 +53,15 @@ export const ProductDetail = () => {
 
   useEffect(() => {
     if (id) {
-      fetchProduct(id);
+      // Handle both UUID and custom URL formats
+      const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
+      
+      if (isUuid) {
+        fetchProduct(id);
+      } else {
+        // Try to resolve custom URL
+        fetchProductByCustomUrl(id);
+      }
     }
   }, [id]);
 
@@ -74,6 +82,59 @@ export const ProductDetail = () => {
       toast({
         title: "Error",
         description: "Failed to load product details",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProductByCustomUrl = async (customPath: string) => {
+    try {
+      setLoading(true);
+      
+      // First, try to find the custom URL
+      const { data: customUrl, error: urlError } = await supabase
+        .from('custom_urls')
+        .select('entity_id')
+        .eq('custom_path', customPath)
+        .eq('entity_type', 'product')
+        .eq('is_active', true)
+        .single();
+
+      if (urlError || !customUrl) {
+        // If no custom URL found, try direct product lookup by model number or name
+        const { data: productByName, error: nameError } = await supabase
+          .from('products')
+          .select('*')
+          .or(`model_number.ilike.%${customPath}%,name.ilike.%${customPath}%`)
+          .eq('is_active', true)
+          .limit(1)
+          .single();
+
+        if (nameError || !productByName) {
+          throw new Error('Product not found');
+        }
+        
+        setProduct(productByName);
+        return;
+      }
+
+      // Fetch the actual product using the entity_id
+      const { data: product, error: productError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', customUrl.entity_id)
+        .eq('is_active', true)
+        .single();
+
+      if (productError) throw productError;
+      setProduct(product);
+    } catch (error) {
+      console.error('Error fetching product by custom URL:', error);
+      toast({
+        title: "Product Not Found",
+        description: "The product you're looking for could not be found",
         variant: "destructive",
       });
     } finally {
@@ -116,9 +177,23 @@ export const ProductDetail = () => {
   };
 
   const handleRequestQuote = () => {
+    if (!product) return;
+    
+    const message = `Hello EINSPOT, I'd like a quote for: ${product.name}
+
+Name: 
+Company: 
+Location: 
+Quantity: ${quantity}
+
+Additional requirements: `;
+    
+    const whatsappUrl = `https://wa.me/2348123647982?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+    
     toast({
       title: "Quote Request",
-      description: "Quote request functionality will be implemented soon",
+      description: "Redirecting to WhatsApp for quote request",
     });
   };
 

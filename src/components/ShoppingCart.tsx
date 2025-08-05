@@ -275,8 +275,13 @@ export const ShoppingCart = () => {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <h4 className="font-medium">Product {item.id.slice(0, 8)}...</h4>
-                        <p className="text-sm text-muted-foreground">₦{item.price.toLocaleString()}</p>
+                        <h4 className="font-medium">{item.product.name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {item.product.show_price ? 
+                            `₦${item.product.price.toLocaleString()}` : 
+                            'Contact for Price'
+                          }
+                        </p>
                       </div>
                       
                       <div className="flex items-center gap-2">
@@ -284,7 +289,7 @@ export const ShoppingCart = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
                             className="h-8 w-8 p-0"
                           >
                             <Minus className="h-3 w-3" />
@@ -293,7 +298,7 @@ export const ShoppingCart = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
                             className="h-8 w-8 p-0"
                           >
                             <Plus className="h-3 w-3" />
@@ -303,7 +308,7 @@ export const ShoppingCart = () => {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => removeFromCart(item.id)}
+                          onClick={() => removeFromCart(item.product_id)}
                           className="h-8 w-8 p-0"
                         >
                           <X className="h-3 w-3" />
@@ -319,7 +324,12 @@ export const ShoppingCart = () => {
         
         <div className="border-t pt-4 mt-4">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-lg font-semibold">Total: ₦{getTotalPrice().toLocaleString()}</span>
+            <span className="text-lg font-semibold">
+              Total: {cartItems.some(item => item.product.show_price) ? 
+                `₦${getTotalPrice().toLocaleString()}` : 
+                'Contact for Price'
+              }
+            </span>
           </div>
           
           <div className="space-y-2">

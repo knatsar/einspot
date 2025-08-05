@@ -29,6 +29,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (error && error.code === 'PGRST116' && email) {
       // Profile doesn't exist, create it
+      console.log('🆕 Creating new profile for:', email);
+      
       const { data: newProfile, error: createError } = await supabase
         .from('profiles')
         .insert({
@@ -40,11 +42,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .select()
         .single();
 
-      if (!createError && newProfile) {
+      if (createError) {
+        console.error('❌ Error creating profile:', createError);
+        return null;
+      }
+      
+      if (newProfile) {
+        console.log('✅ Profile created successfully:', newProfile);
         return newProfile;
       }
     }
 
+    if (error && error.code !== 'PGRST116') {
+      console.error('❌ Error fetching profile:', error);
+      return null;
+    }
     return profile;
   };
 
@@ -56,6 +68,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(session.user);
           const profile = await getOrCreateProfile(session.user.id, session.user.email);
           setUserRole(profile?.role || 'customer');
+          
+          // Additional logging for debugging admin access
+          if (session.user.email?.includes('admin') || session.user.email?.includes('einspot')) {
+            console.log('🔐 Admin user detected:', {
+              email: session.user.email,
+              role: profile?.role,
+              userId: session.user.id
+            });
+          }
         } else {
           setUser(null);
           setUserRole(null);
@@ -64,11 +85,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Error in onAuthStateChange:", error);
         setUser(null);
         setUserRole(null);
-        toast({
-          title: "Authentication Error",
-          description: "There was a problem verifying your session.",
-          variant: "destructive",
-        });
+        // Don't show toast for auth state changes, just log
+        console.warn("Authentication state change error:", error);
       } finally {
         setLoading(false);
       }

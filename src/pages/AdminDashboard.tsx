@@ -44,6 +44,7 @@ import AdminUserManager from '@/components/admin/AdminUserManager';
 import { MenuManager } from '@/components/admin/MenuManager';
 import { ProfileManager } from '@/components/admin/ProfileManager';
 import { AdminSecurityCenter } from '@/components/admin/AdminSecurityCenter';
+import AdminProductImporter from '@/components/admin/AdminProductImporter';
 import {
   DropdownMenu,
   DropdownMenuContent,
