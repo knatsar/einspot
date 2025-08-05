@@ -1,4 +1,5 @@
 import { useContext, useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +10,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Memoize super admin emails
   const DEFAULT_SUPER_ADMINS = useMemo(() => [
@@ -47,139 +49,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    let mounted = true;
-    
-    const initSession = async () => {
+    setLoading(true);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-
         if (session?.user) {
           setUser(session.user);
           const profile = await getOrCreateProfile(session.user.id, session.user.email);
-          
-          if (profile) {
-            setUserRole(profile.role);
-          }
-        }
-      } catch (error) {
-        console.error('Session init error:', error);
-        toast({
-          title: "Error",
-          description: "Failed to initialize session",
-          variant: "destructive"
-        });
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    initSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-
-        if (event === 'SIGNED_OUT') {
+          setUserRole(profile?.role || 'customer');
+        } else {
           setUser(null);
           setUserRole(null);
-        } else if (session?.user) {
-          setUser(session.user);
-          const profile = await getOrCreateProfile(session.user.id, session.user.email);
-          setUserRole(profile?.role || 'customer');
         }
-        
+      } catch (error) {
+        console.error("Error in onAuthStateChange:", error);
+        setUser(null);
+        setUserRole(null);
+        toast({
+          title: "Authentication Error",
+          description: "There was a problem verifying your session.",
+          variant: "destructive",
+        });
+      } finally {
         setLoading(false);
       }
-    );
+    });
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
   }, [DEFAULT_SUPER_ADMINS, toast]);
-
-  const fetchUserRole = async (userId: string, userEmail?: string) => {
-    try {
-      // Removed console.log for production
-      
-      // Check if user is a default super admin
-      const isSuperAdmin = userEmail && DEFAULT_SUPER_ADMINS.includes(userEmail.toLowerCase());
-      
-      // First check if profile exists
-      const { data: existingProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (profileError && profileError.code !== 'PGRST116') {
-        // Handle profile creation if doesn't exist
-        if (userEmail) {
-          try {
-            const { error: createError } = await supabase
-              .from('profiles')
-              .insert({
-                user_id: userId,
-                email: userEmail,
-                full_name: userEmail.split('@')[0],
-                role: isSuperAdmin ? 'superadmin' : 'customer'
-              });
-            
-            if (!createError) {
-              setUserRole(isSuperAdmin ? 'superadmin' : 'customer');
-              setLoading(false);
-              return;
-            }
-          } catch (createErr) {
-            console.error('Error creating profile:', createErr);
-          }
-        }
-        setUserRole('customer');
-        setLoading(false);
-        return;
-      }
-
-      let role = existingProfile?.role || 'customer';
-
-      // If user is a default super admin but doesn't have the role yet, update it
-      if (isSuperAdmin && role !== 'superadmin') {
-        role = 'superadmin';
-        
-        try {
-          // Create or update profile with superadmin role
-          const { error: upsertError } = await supabase
-            .from('profiles')
-            .upsert({
-              user_id: userId,
-              email: userEmail,
-              role: 'superadmin',
-              full_name: userEmail?.split('@')[0] || 'Admin User',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            });
-          
-          if (upsertError) {
-            console.error('Error updating superadmin profile:', upsertError);
-          }
-        } catch (error) {
-          console.error('❌ Error updating superadmin profile:', error);
-        }
-      }
-      
-      setUserRole(role);
-      setLoading(false);
-      
-    } catch (error) {
-      console.error('Error fetching user role:', error);
-      const fallbackRole = userEmail && DEFAULT_SUPER_ADMINS.includes(userEmail.toLowerCase()) 
-        ? 'superadmin' 
-        : 'customer';
-      setUserRole(fallbackRole);
-      setLoading(false);
-    }
-  };
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -215,31 +113,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      // Clean up auth state first
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-          localStorage.removeItem(key);
-        }
-      });
-      
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Error signing out:', error);
+        toast({
+          title: "Sign Out Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
       }
-      
-      // Clean up state
-      setUser(null);
-      setUserRole(null);
-      
-      // Only reload if not already on home page
-      if (window.location.pathname !== '/') {
-        window.location.href = '/';
-      }
+      // The onAuthStateChange listener will handle setting user and role to null.
+      navigate('/');
     } catch (error) {
       console.error('Error during sign out:', error);
-      if (window.location.pathname !== '/') {
-        window.location.href = '/';
-      }
+      toast({
+        title: "Sign Out Error",
+        description: "An unexpected error occurred during sign out.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -271,4 +163,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export { useAuth } from './use-auth';
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

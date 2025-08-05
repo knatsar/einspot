@@ -28,20 +28,12 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Check admin access for /admin routes
-  if (requireAdmin || location.pathname.startsWith('/admin')) {
-    if (userRole !== 'superadmin' && userRole !== 'admin') {
-      return <Navigate to="/dashboard" replace />;
-    }
-  }
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const hasAdminRole = userRole === 'superadmin' || userRole === 'admin';
 
-  // Don't show access denied, just redirect non-admins
-  if (location.pathname.startsWith('/admin') && userRole !== 'superadmin' && userRole !== 'admin') {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Navigate to="/dashboard" replace />
-      </div>
-    );
+  if (isAdminRoute && !hasAdminRole) {
+    // If on an admin route without admin privileges, redirect to the customer dashboard.
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

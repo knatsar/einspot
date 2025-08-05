@@ -1,40 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
-import { cr    switch (template) {
-    case 'verification':
-      return {
-        subject: 'Verify Your Email Address - Einspot Engineering Solutions',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="color: #333;">Verify Your Email</h1>
-              <p>Thank you for signing up with Einspot Engineering Solutions. Please click the button below to verify your email address:</p>
-              <a href="{{verificationUrl}}" style="display: inline-block; background-color: #0ea5e9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 20px 0;">Verify Email</a>
-              <p style="color: #666; font-size: 14px;">If you didn't create an account, please ignore this email.</p>
-            </div>
-          </div>
-        `
-      };
-    case 'reset_password':
-      return {
-        subject: 'Reset Your Password - Einspot Engineering Solutions',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="color: #333;">Reset Your Password</h1>
-              <p>You recently requested to reset your password. Click the button below to create a new password:</p>
-              <a href="{{resetUrl}}" style="display: inline-block; background-color: #0ea5e9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 20px 0;">Reset Password</a>
-              <p style="color: #666; font-size: 14px;">If you didn't request a password reset, please ignore this email.</p>
-            </div>
-          </div>
-        `
-      };
-    case 'welcome':
-      return {
-        subject: 'Welcome to Einspot Engineering Solutions',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="text-align: center; margin-bottom: 30px;">`ent } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 // Rate limiting and security utilities
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
