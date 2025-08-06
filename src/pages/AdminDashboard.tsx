@@ -86,6 +86,7 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [accessVerified, setAccessVerified] = useState(false);
   
   // Verify access immediately when component mounts
   useEffect(() => {
