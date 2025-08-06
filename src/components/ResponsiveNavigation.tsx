@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { Menu, X, Phone, Mail, User, LogOut, Shield, Search, ShoppingCart } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlobalSearch from '@/components/GlobalSearch';
 import { ShoppingCart as ShoppingCartComponent } from '@/components/ShoppingCart';
@@ -194,6 +194,9 @@ const ResponsiveNavigation = () => {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-80 p-0">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Navigation Menu</SheetTitle>
+                </SheetHeader>
                 <motion.div
                   variants={menuVariants}
                   initial="closed"
